@@ -15,18 +15,20 @@ def index():
     return render_template('index.html')
 
 @app.route('/save', methods=['POST'])
-def save():
+def save()
     data = request.json
     jst = timezone(timedelta(hours=+9), 'JST')
     now = datetime.now(jst).strftime('%m/%d %H:%M')
-    with sqlite3.connect('innernote.db') as conn:
+    with sqlite3.connect('/opt/render/project/src/innernote.db') as conn:
+
         conn.execute('INSERT INTO logs (mood, mood_score, body, body_score, memo, date) VALUES (?, ?, ?, ?, ?, ?)',
                      (data['mood'], data['moodScore'], data['body'], data['bodyScore'], data['memo'], now))
     return jsonify({"status": "success"})
 
 @app.route('/logs')
-def get_logs():
-    with sqlite3.connect('innernote.db') as conn:
+def get_logs as conn:
+    conn = sqlite3.connect('/opt/render/project/src/innernote.db')
+    
         conn.row_factory = sqlite3.Row
         logs = conn.execute('SELECT * FROM logs ORDER BY id DESC').fetchall()
     return jsonify([dict(log) for log in logs])
