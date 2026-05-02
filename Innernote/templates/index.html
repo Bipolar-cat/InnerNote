@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InnerNote - 自分専用</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; background-color: #f8f9fa; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1 { color: #007bff; text-align: center; }
+        label { display: block; margin-top: 15px; font-weight: bold; }
+        select, textarea { width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ddd; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; margin-top: 20px; font-size: 16px; cursor: pointer; }
+        .log-item { background: #eee; padding: 10px; margin-top: 10px; border-radius: 5px; font-size: 14px; }
+        canvas { margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>InnerNote</h1>
+        <p style="text-align: center; font-size: 0.8em;">**気分と調子の変化を個人保存**</p>
+
+        <label>今の気分 (1:低 〜 10:高)</label>
+        <select id="mood">
+            <script>for(let i=1; i<=10; i++) document.write(`<option value="${i}" ${i==5?'selected':''}>${i}</option>`);</script>
+        </select>
+
+        <label>体の調子 (1:悪 〜 10:良)</label>
+        <select id="condition">
+            <script>for(let i=1; i<=10; i++) document.write(`<option value="${i}" ${i==5?'selected':''}>${i}</option>`);</script>
+        </select>
+
+        <label>今の気持ちをメモ...</label>
+        <textarea id="note" rows="3"></textarea>
+
+        <button onclick="saveLog()">記録する</button>
+
+        <canvas id="myChart"></canvas>
+        <div id="logs"></div>
+    </div>
+
+    <script>
+        let myChart;
+        window.onload = function() { displayLogs(); };
+
+        function saveLog() {
+            const mood = document.getElementById('mood').value;
+            const condition = document.getElementById('condition').value;
+            const note = document.getElementById('note').value;
+            const now = new Date();
+            const timestamp = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+            const newLog = { timestamp, mood: Number(mood), condition: Number(condition), note };
+            let logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
+            logs.unshift(newLog);
+            localStorage.setItem('innernote_logs', JSON.stringify(logs));
+            document.getElementById('note').value = '';
+            displayLogs();
+        }
+
+        function displayLogs() {
+            const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
+            const logsDiv = document.getElementById('logs');
+            logsDiv.innerHTML = '<h3>最近の記録</h3>';
+            const chartData = { labels: [], mood: [], condition: [] };
+            logs.slice(0, 10).reverse().forEach(log => {
+                logsDiv.innerHTML += `<div class="log-item"><strong>${log.timestamp}</strong><br>気分: ${log.mood} / 調子: ${log.condition}<br>${log.note}</div>`;
+                chartData.labels.push(log.timestamp);
+                chartData.mood.push(log.mood);
+                chartData.condition.push(log.condition);
+            });
+            updateChart(chartData);
+        }
+
+        function updateChart(data) {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        { label: '気分', data: data.mood, borderColor: '#007bff', fill: false, tension: 0.1 },
+                        { label: '調子', data: data.condition, borderColor: '#ffc107', fill: false, tension: 0.1 }
+                    ]
+                },
+                options: { scales: { y: { min: 1, max: 10 } } }
+            });
+        }
+    </script>
+</body>
+</html>
+
