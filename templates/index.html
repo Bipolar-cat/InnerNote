@@ -3,43 +3,109 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InnerNote - 10段階評価</title>
+    <title>InnerNote - 10段階評価版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; background-color: #f8f9fa; }
-        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        h1 { color: #007bff; text-align: center; }
-        label { display: block; font-weight: bold; margin-top: 20px; }
-        select, textarea { width: 100%; padding: 12px; margin-top: 8px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 1em; }
-        .main-btn { width: 100%; padding: 15px; background: #007bff; color: white; border: none; border-radius: 10px; margin-top: 25px; font-weight: bold; cursor: pointer; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 500px; margin: auto; padding: 20px; background-color: #f8f9fa; color: #333; }
+        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h1 { color: #4a90e2; text-align: center; margin-bottom: 5px; font-size: 2em; }
+        .subtitle { text-align: center; font-size: 0.85em; color: #666; margin-bottom: 30px; }
+        
+        label { display: block; font-weight: bold; margin-top: 20px; margin-bottom: 8px; }
+        select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 1em; background: #fff; }
+        
+        .main-btn { width: 100%; padding: 16px; background: #4a90e2; color: white; border: none; border-radius: 10px; margin-top: 25px; font-size: 1.1em; font-weight: bold; cursor: pointer; }
+        .log-item { background: #fff; padding: 15px; margin-top: 15px; border-radius: 12px; border-left: 5px solid #4a90e2; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 0.9em; }
+        .chart-section { margin-top: 30px; height: 250px; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>InnerNote</h1>
-        <p style="text-align:center; font-size:0.8em; color:#666;">データはあなたのブラウザにのみ保存されます</p>
+        <div class="subtitle">**10段階評価で細かく記録**</div>
 
         <label>今の気分 (1:低 ～ 10:高)</label>
         <select id="mood">
-            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-            <option value="4">4</option><option value="5" selected>5</option><option value="6">6</option>
-            <option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+            <script>for(let i=1;i<=10;i++) document.write(`<option value="${i}" ${i===5?'selected':''}>${i}</option>`);</script>
         </select>
 
         <label>体の調子 (1:悪 ～ 10:良)</label>
         <select id="cond">
-            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-            <option value="4">4</option><option value="5" selected>5</option><option value="6">6</option>
-            <option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+            <script>for(let i=1;i<=10;i++) document.write(`<option value="${i}" ${i===5?'selected':''}>${i}</option>`);</script>
         </select>
 
         <textarea id="note" rows="3" placeholder="今の気持ちをメモ..."></textarea>
         <button class="main-btn" onclick="saveLog()">記録する</button>
-        <canvas id="myChart" style="margin-top:30px;"></canvas>
+        
+        <div class="chart-section"><canvas id="myChart"></canvas></div>
         <div id="logs"></div>
     </div>
+
     <script>
-        /* ※ロジック部分は省略しますが、以前使用していた10段階用の保存処理をここに入れます */
+        let myChart = null;
+        window.onload = function() { displayLogs(); };
+
+        function saveLog() {
+            const mood = document.getElementById('mood').value;
+            const condition = document.getElementById('cond').value;
+            const note = document.getElementById('note').value;
+            
+            const now = new Date();
+            const timestamp = now.toLocaleString('ja-JP', {
+                timeZone: 'Asia/Tokyo',
+                month: 'numeric', day: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            }).replace('/', '月').replace(' ', '日 ');
+
+            const newLog = { timestamp, mood: Number(mood), condition: Number(condition), note };
+            let logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
+            logs.unshift(newLog);
+            localStorage.setItem('innernote_logs', JSON.stringify(logs));
+            
+            document.getElementById('note').value = '';
+            displayLogs();
+        }
+
+        function displayLogs() {
+            const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
+            const logsDiv = document.getElementById('logs');
+            logsDiv.innerHTML = '<h3 style="text-align:center; margin-top:30px;">最近の記録</h3>';
+            
+            const chartData = { labels: [], mood: [], condition: [] };
+            
+            logs.forEach((log, index) => {
+                if (index < 10) {
+                    logsDiv.innerHTML += `<div class="log-item"><strong>【${log.timestamp}】</strong><br>気分: ${log.mood} ／ 体: ${log.condition}<br>${log.note}</div>`;
+                }
+            });
+
+            const displayData = [...logs].slice(0, 10).reverse();
+            displayData.forEach(log => {
+                chartData.labels.push(log.timestamp.split(' ')); 
+                chartData.mood.push(log.mood);
+                chartData.condition.push(log.condition);
+            });
+            updateChart(chartData);
+        }
+
+        function updateChart(data) {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            if (myChart) myChart.destroy();
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        { label: '気分', data: data.mood, borderColor: '#4a90e2', tension: 0.3, borderWidth: 3 },
+                        { label: '体調', data: data.condition, borderColor: '#f5a623', tension: 0.3, borderWidth: 3 }
+                    ]
+                },
+                options: { 
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { min: 1, max: 10, ticks: { stepSize: 1 } } }
+                }
+            });
+        }
     </script>
 </body>
 </html>
