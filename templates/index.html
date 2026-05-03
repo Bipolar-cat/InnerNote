@@ -10,27 +10,19 @@
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         h1 { color: #4a90e2; text-align: center; margin-bottom: 5px; font-size: 1.8em; }
         .subtitle { text-align: center; font-size: 0.9em; color: #666; margin-bottom: 25px; font-weight: bold; }
-        
         .section-title { text-align: center; font-weight: bold; margin-top: 20px; margin-bottom: 10px; display: block; }
-        
-        /* ボタン選択形式のスタイル */
         .btn-group { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
         .btn-group input { display: none; }
         .btn-group label { 
             flex: 1; text-align: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; 
-            cursor: pointer; transition: all 0.2s; background: #fff; font-weight: normal; margin-top: 0;
+            cursor: pointer; transition: all 0.2s; background: #fff;
         }
         .btn-group input:checked + label { background: #4a90e2; color: white; border-color: #4a90e2; font-weight: bold; }
-
-        textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
-        .main-btn { 
-            width: 100%; padding: 15px; background: #4a90e2; color: white; border: none; 
-            border-radius: 8px; margin-top: 20px; font-size: 18px; font-weight: bold; cursor: pointer; 
-        }
-        
+        textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; margin-top: 10px; }
+        .main-btn { width: 100%; padding: 15px; background: #4a90e2; color: white; border: none; border-radius: 8px; margin-top: 20px; font-size: 18px; font-weight: bold; cursor: pointer; }
         .log-item { background: #fff; padding: 15px; margin-top: 15px; border-radius: 10px; border-left: 5px solid #4a90e2; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-size: 14px; }
+        .privacy-note { text-align: center; font-size: 0.7em; color: #999; margin-top: 15px; line-height: 1.5; }
         canvas { margin-top: 30px; max-width: 100%; }
-        .privacy-note { text-align: center; font-size: 0.7em; color: #999; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -53,10 +45,12 @@
         </div>
 
         <textarea id="note" rows="3" placeholder="今の気持ちをメモ..."></textarea>
-
         <button class="main-btn" onclick="saveLog()">記録する</button>
         
-        <p class="privacy-note">データはあなたのブラウザにのみ保存されます</p>
+        <p class="privacy-note">
+            データはあなたのブラウザにのみ安全に保存されます。<br>
+            他のユーザーとデータが混ざることはありません。
+        </p>
 
         <div style="height: 250px; margin-top: 20px;">
             <canvas id="myChart"></canvas>
@@ -73,7 +67,9 @@
             const condition = document.querySelector('input[name="cond"]:checked').value;
             const note = document.getElementById('note').value;
             const now = new Date();
-            const timestamp = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
+            // 24時間表記（時:分）を含む日時の作成
+            const timestamp = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
             
             const newLog = { timestamp, mood: Number(mood), condition: Number(condition), note };
             let logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
@@ -93,13 +89,19 @@
             
             logs.forEach((log, index) => {
                 if (index < 10) {
-                    logsDiv.innerHTML += `<div class="log-item"><strong>【${log.timestamp}】</strong><br>気分: ${getLabel(log.mood)} ／ 体: ${getLabel(log.condition)}<br>${log.note}</div>`;
+                    logsDiv.innerHTML += `
+                        <div class="log-item">
+                            <strong>【${log.timestamp}】</strong><br>
+                            気分: ${getLabel(log.mood)} ／ 体: ${getLabel(log.condition)}<br>
+                            ${log.note}
+                        </div>`;
                 }
             });
 
+            // グラフ用に最新10件を古い順に並び替え
             const displayData = [...logs].slice(0, 10).reverse();
             displayData.forEach(log => {
-                chartData.labels.push(log.timestamp.split(' ')[0]); // 日付のみ表示
+                chartData.labels.push(log.timestamp); // 日時と時間をラベルに反映
                 chartData.mood.push(log.mood);
                 chartData.condition.push(log.condition);
             });
@@ -126,12 +128,23 @@
                 },
                 options: { 
                     responsive: true, maintainAspectRatio: false,
-                    scales: { y: { min: 0, max: 10, ticks: { callback: function(value) { 
-                        if (value === 2) return '低い/悪い';
-                        if (value === 5) return '普通';
-                        if (value === 8) return '良い';
-                        return '';
-                    } } } } 
+                    scales: { 
+                        y: { 
+                            min: 0, max: 10,
+                            ticks: { 
+                                stepSize: 3,
+                                callback: function(value) { 
+                                    if (value === 2) return '低い/悪い';
+                                    if (value === 5) return '普通';
+                                    if (value === 8) return '良い';
+                                    return '';
+                                } 
+                            } 
+                        },
+                        x: {
+                            ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 45 }
+                        }
+                    } 
                 }
             });
         }
