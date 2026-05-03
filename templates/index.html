@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InnerNote - 自分専用</title>
+    <title>InnerNote - 個人専用</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; background-color: #f8f9fa; }
@@ -13,13 +13,12 @@
         select, textarea { width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ddd; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; margin-top: 20px; font-size: 16px; cursor: pointer; }
         .log-item { background: #eee; padding: 10px; margin-top: 10px; border-radius: 5px; font-size: 14px; }
-        canvas { margin-top: 30px; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>InnerNote</h1>
-        <p style="text-align: center; font-size: 0.8em;">**気分と調子の変化を個人保存**</p>
+        <p style="text-align: center; font-size: 0.8em;">データはあなたのブラウザだけに保存されます</p>
 
         <label>今の気分 (1:低 〜 10:高)</label>
         <select id="mood">
@@ -50,10 +49,14 @@
             const note = document.getElementById('note').value;
             const now = new Date();
             const timestamp = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+            
             const newLog = { timestamp, mood: Number(mood), condition: Number(condition), note };
+            
+            // スマホの保存領域からデータを読み出し、新しいデータを追加して保存し直す
             let logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
             logs.unshift(newLog);
             localStorage.setItem('innernote_logs', JSON.stringify(logs));
+            
             document.getElementById('note').value = '';
             displayLogs();
         }
@@ -62,6 +65,7 @@
             const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
             const logsDiv = document.getElementById('logs');
             logsDiv.innerHTML = '<h3>最近の記録</h3>';
+            
             const chartData = { labels: [], mood: [], condition: [] };
             logs.slice(0, 10).reverse().forEach(log => {
                 logsDiv.innerHTML += `<div class="log-item"><strong>${log.timestamp}</strong><br>気分: ${log.mood} / 調子: ${log.condition}<br>${log.note}</div>`;
@@ -80,8 +84,8 @@
                 data: {
                     labels: data.labels,
                     datasets: [
-                        { label: '気分', data: data.mood, borderColor: '#007bff', fill: false, tension: 0.1 },
-                        { label: '調子', data: data.condition, borderColor: '#ffc107', fill: false, tension: 0.1 }
+                        { label: '気分', data: data.mood, borderColor: '#007bff', fill: false },
+                        { label: '調子', data: data.condition, borderColor: '#ffc107', fill: false }
                     ]
                 },
                 options: { scales: { y: { min: 1, max: 10 } } }
