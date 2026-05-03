@@ -28,7 +28,7 @@
 <body>
     <div class="card">
         <h1>InnerNote</h1>
-        <div class="subtitle">**気分と調子の変化を記録**</div>
+        <div class="subtitle">気分と調子の変化を記録</div>
 
         <label class="section-title">今日の気分は？</label>
         <div class="btn-group">
@@ -48,8 +48,8 @@
         <button class="main-btn" onclick="saveLog()">記録する</button>
         
         <p class="privacy-note">
-            データはあなたのブラウザにのみ安全に保存されます。<br>
-            他のユーザーとデータが混ざることはありません。
+            データはあなたのブラウザにのみ保存されます。<br>
+            時間は日本標準時で記録されます。
         </p>
 
         <div style="height: 250px; margin-top: 20px;">
@@ -66,10 +66,17 @@
             const mood = document.querySelector('input[name="mood"]:checked').value;
             const condition = document.querySelector('input[name="cond"]:checked').value;
             const note = document.getElementById('note').value;
-            const now = new Date();
             
-            // 月/日 時:分の形式で保存
-            const timestamp = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
+            // 日本時間(JST)でフォーマットを固定して取得
+            const now = new Date();
+            const timestamp = now.toLocaleString('ja-JP', {
+                timeZone: 'Asia/Tokyo',
+                month: 'numeric',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false
+            });
             
             const newLog = { timestamp, mood: Number(mood), condition: Number(condition), note };
             let logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
@@ -95,7 +102,7 @@
 
             const displayData = [...logs].slice(0, 10).reverse();
             displayData.forEach(log => {
-                chartData.labels.push(log.timestamp);
+                chartData.labels.push(log.timestamp); // 24時間表記の時間を含めてグラフに表示
                 chartData.mood.push(log.mood);
                 chartData.condition.push(log.condition);
             });
@@ -123,7 +130,8 @@
                 options: { 
                     responsive: true, maintainAspectRatio: false,
                     scales: { 
-                        y: { min: 0, max: 10, ticks: { stepSize: 3, callback: v => (v===2?'低い/悪い':v===5?'普通':v===8?'良い':'') } }
+                        y: { min: 0, max: 10, ticks: { stepSize: 3, callback: v => (v===2?'低い/悪い':v===5?'普通':v===8?'良い':'') } },
+                        x: { ticks: { font: { size: 10 } } }
                     }
                 }
             });
