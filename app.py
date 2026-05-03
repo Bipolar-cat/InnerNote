@@ -8,7 +8,8 @@ app = Flask(__name__)
 def init_db():
     with sqlite3.connect('innernote.db') as conn:
         conn.execute('''CREATE TABLE IF NOT EXISTS logs 
-            (id INTEGER PRIMARY KEY AUTOINCREMENT, mood TEXT, mood_score INTEGER, body TEXT, body_score INTEGER, memo TEXT, date TEXT)''')
+            (id INTEGER PRIMARY KEY AUTOINCREMENT, mood TEXT, mood_score INTEGER, body TEXT, body_score INTEGER, memo TEXT, date TEXT))''')
+
 
 @app.route('/')
 def index():
