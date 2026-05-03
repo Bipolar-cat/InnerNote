@@ -13,21 +13,26 @@
         select, textarea { width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ddd; box-sizing: border-box; }
         button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; margin-top: 20px; font-size: 16px; cursor: pointer; }
         .log-item { background: #eee; padding: 10px; margin-top: 10px; border-radius: 5px; font-size: 14px; }
+        canvas { margin-top: 30px; max-width: 100%; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>InnerNote</h1>
-        <p style="text-align: center; font-size: 0.8em;">データはあなたのブラウザだけに保存されます</p>
+        <p style="text-align: center; font-size: 0.8em;">データはあなたのブラウザにのみ保存されます</p>
 
         <label>今の気分 (1:低 〜 10:高)</label>
         <select id="mood">
-            <script>for(let i=1; i<=10; i++) document.write(`<option value="${i}" ${i==5?'selected':''}>${i}</option>`);</script>
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5" selected>5</option><option value="6">6</option>
+            <option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
         </select>
 
         <label>体の調子 (1:悪 〜 10:良)</label>
         <select id="condition">
-            <script>for(let i=1; i<=10; i++) document.write(`<option value="${i}" ${i==5?'selected':''}>${i}</option>`);</script>
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+            <option value="4">4</option><option value="5" selected>5</option><option value="6">6</option>
+            <option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
         </select>
 
         <label>今の気持ちをメモ...</label>
@@ -35,13 +40,18 @@
 
         <button onclick="saveLog()">記録する</button>
 
-        <canvas id="myChart"></canvas>
+        <div style="height: 250px;">
+            <canvas id="myChart"></canvas>
+        </div>
         <div id="logs"></div>
     </div>
 
     <script>
-        let myChart;
-        window.onload = function() { displayLogs(); };
+        let myChart = null;
+
+        window.onload = function() {
+            displayLogs();
+        };
 
         function saveLog() {
             const mood = document.getElementById('mood').value;
@@ -52,7 +62,6 @@
             
             const newLog = { timestamp, mood: Number(mood), condition: Number(condition), note };
             
-            // スマホの保存領域からデータを読み出し、新しいデータを追加して保存し直す
             let logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
             logs.unshift(newLog);
             localStorage.setItem('innernote_logs', JSON.stringify(logs));
@@ -67,28 +76,46 @@
             logsDiv.innerHTML = '<h3>最近の記録</h3>';
             
             const chartData = { labels: [], mood: [], condition: [] };
-            logs.slice(0, 10).reverse().forEach(log => {
-                logsDiv.innerHTML += `<div class="log-item"><strong>${log.timestamp}</strong><br>気分: ${log.mood} / 調子: ${log.condition}<br>${log.note}</div>`;
+            
+            logs.forEach((log, index) => {
+                if (index < 10) {
+                    logsDiv.innerHTML += `<div class="log-item"><strong>${log.timestamp}</strong><br>気分: ${log.mood} / 調子: ${log.condition}<br>${log.note}</div>`;
+                }
+            });
+
+            const displayData = [...logs].slice(0, 10).reverse();
+            displayData.forEach(log => {
                 chartData.labels.push(log.timestamp);
                 chartData.mood.push(log.mood);
                 chartData.condition.push(log.condition);
             });
+
             updateChart(chartData);
         }
 
         function updateChart(data) {
-            const ctx = document.getElementById('myChart').getContext('2d');
-            if (myChart) myChart.destroy();
+            const canvas = document.getElementById('myChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            
+            if (myChart) {
+                myChart.destroy();
+            }
+            
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: data.labels,
                     datasets: [
-                        { label: '気分', data: data.mood, borderColor: '#007bff', fill: false },
-                        { label: '調子', data: data.condition, borderColor: '#ffc107', fill: false }
+                        { label: '気分', data: data.mood, borderColor: '#007bff', backgroundColor: '#007bff', fill: false, tension: 0.1 },
+                        { label: '調子', data: data.condition, borderColor: '#ffc107', backgroundColor: '#ffc107', fill: false, tension: 0.1 }
                     ]
                 },
-                options: { scales: { y: { min: 1, max: 10 } } }
+                options: { 
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { min: 1, max: 10 } } 
+                }
             });
         }
     </script>
