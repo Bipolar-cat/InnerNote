@@ -6,39 +6,20 @@
     <title>InnerNote - 気分と調子の変化を記録</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* 画像のデザインとフォントを完全に再現するためのスタイル設定 */
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol"; max-width: 500px; margin: auto; padding: 20px; background-color: #f8f9fa; color: #333; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; background-color: #f8f9fa; color: #333; }
         .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         h1 { color: #4a90e2; text-align: center; margin-bottom: 5px; font-size: 2em; font-weight: 500; }
-        .subtitle { text-align: center; font-size: 0.85em; color: #666; margin-bottom: 30px; font-weight: normal; }
-        
-        .section-title { text-align: center; font-weight: bold; margin-top: 25px; margin-bottom: 12px; display: block; font-size: 1.05em; }
-        
-        /* 画像にあるスッキリしたボタン形式のスタイル */
+        .subtitle { text-align: center; font-size: 0.85em; color: #666; margin-bottom: 30px; }
+        .section-title { text-align: center; font-weight: bold; margin-top: 25px; margin-bottom: 12px; display: block; }
         .btn-group { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
         .btn-group input { display: none; }
-        .btn-group label { 
-            flex: 1; text-align: center; padding: 12px 10px; border: 1px solid #ddd; border-radius: 10px; 
-            cursor: pointer; transition: all 0.2s; background: #fff; font-weight: normal; font-size: 1em;
-        }
+        .btn-group label { flex: 1; text-align: center; padding: 12px 10px; border: 1px solid #ddd; border-radius: 10px; cursor: pointer; background: #fff; transition: all 0.2s; }
         .btn-group input:checked + label { background: #e6f0fa; color: #4a90e2; border-color: #aed0ee; font-weight: bold; }
-
-        textarea { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 1em; margin-top: 15px; resize: none; background-color: #fff; }
-        textarea::placeholder { color: #999; }
-        
-        /* 画像にある青色の大きな記録ボタン */
-        .main-btn { 
-            width: 100%; padding: 16px; background: #4a90e2; color: white; border: none; 
-            border-radius: 10px; margin-top: 25px; font-size: 1.1em; font-weight: bold; cursor: pointer; 
-            transition: background 0.2s;
-        }
-        .main-btn:active { background: #357abd; }
-        
-        /* グラフと過去記録のスタイル */
+        textarea { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 1em; margin-top: 15px; resize: none; }
+        .main-btn { width: 100%; padding: 16px; background: #4a90e2; color: white; border: none; border-radius: 10px; margin-top: 25px; font-size: 1.1em; font-weight: bold; cursor: pointer; }
         .log-item { background: #fff; padding: 18px; margin-top: 18px; border-radius: 12px; border-left: 5px solid #4a90e2; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 0.95em; }
-        canvas { margin-top: 35px; max-width: 100%; }
         .chart-section { margin-top: 30px; height: 260px; }
-        .privacy-note { text-align: center; font-size: 0.75em; color: #aaa; margin-top: 15px; line-height: 1.5; }
+        .privacy-note { text-align: center; font-size: 0.75em; color: #aaa; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -61,7 +42,6 @@
         </div>
 
         <textarea id="note" rows="3" placeholder="今の気持ちをメモ..."></textarea>
-
         <button class="main-btn" onclick="saveLog()">記録する</button>
         
         <p class="privacy-note">
@@ -80,24 +60,17 @@
         window.onload = function() { displayLogs(); };
 
         function saveLog() {
-            const moodInput = document.querySelector('input[name="mood"]:checked');
-            const condInput = document.querySelector('input[name="cond"]:checked');
-            if (!moodInput || !condInput) return; // 安全対策
-
-            const mood = moodInput.value;
-            const condition = condInput.value;
+            const mood = document.querySelector('input[name="mood"]:checked').value;
+            const condition = document.querySelector('input[name="cond"]:checked').value;
             const note = document.getElementById('note').value;
             
-            // 日本時間(JST)でフォーマットを固定して取得
             const now = new Date();
             const timestamp = now.toLocaleString('ja-JP', {
                 timeZone: 'Asia/Tokyo',
-                month: 'numeric',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
+                month: 'numeric', day: 'numeric',
+                hour: '2-digit', minute: '2-digit',
                 hour12: false
-            }).replace('/', '月').replace(' ', '日 '); // 画像の表記に合わせる「5月2日 22:03」のような形式
+            }).replace('/', '月').replace(' ', '日 ');
 
             const newLog = { timestamp, mood: Number(mood), condition: Number(condition), note };
             let logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
@@ -111,7 +84,7 @@
         function displayLogs() {
             const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
             const logsDiv = document.getElementById('logs');
-            logsDiv.innerHTML = '<h3 style="text-align:center; margin-top:35px; font-weight:normal; font-size:1.2em;">最近の記録</h3>';
+            logsDiv.innerHTML = '<h3 style="text-align:center; margin-top:35px; font-weight:normal;">最近の記録</h3>';
             
             const chartData = { labels: [], mood: [], condition: [] };
             
@@ -128,8 +101,8 @@
 
             const displayData = [...logs].slice(0, 10).reverse();
             displayData.forEach(log => {
-                // グラフの横軸は時間だけにするなど、見やすく調整
-                chartData.labels.push(log.timestamp.split('日 ')[1]); 
+                // グラフの横軸に「日付」と「時間」の両方を表示するように変更
+                chartData.labels.push(log.timestamp.split(' ')); 
                 chartData.mood.push(log.mood);
                 chartData.condition.push(log.condition);
             });
@@ -146,29 +119,29 @@
             const ctx = document.getElementById('myChart').getContext('2d');
             if (myChart) myChart.destroy();
             
-            // グラフの線も画像に合わせる（滑らかに、色を調整）
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: data.labels,
                     datasets: [
-                        { label: '気分', data: data.mood, borderColor: '#4a90e2', backgroundColor: '#4a90e2', fill: false, tension: 0.3, borderWidth: 3, pointRadius: 4 },
-                        { label: '体調', data: data.condition, borderColor: '#f5a623', backgroundColor: '#f5a623', fill: false, tension: 0.3, borderWidth: 3, pointRadius: 4 }
+                        { label: '気分', data: data.mood, borderColor: '#4a90e2', backgroundColor: '#4a90e2', tension: 0.3, borderWidth: 3 },
+                        { label: '体調', data: data.condition, borderColor: '#f5a623', backgroundColor: '#f5a623', tension: 0.3, borderWidth: 3 }
                     ]
                 },
                 options: { 
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { labels: { font: { size: 12 } } } },
                     scales: { 
                         y: { 
                             min: 0, max: 10,
-                            ticks: { 
-                                stepSize: 3, 
-                                font: { size: 11 },
-                                callback: v => (v===2?'低い/悪い':v===5?'普通':v===8?'良い':'')
-                            } 
+                            ticks: { stepSize: 3, callback: v => (v===2?'低い/悪い':v===5?'普通':v===8?'良い':'') } 
                         },
-                        x: { ticks: { font: { size: 11 } } }
+                        x: { 
+                            ticks: { 
+                                font: { size: 10 },
+                                maxRotation: 0, 
+                                autoSkip: true 
+                            } 
+                        }
                     }
                 }
             });
