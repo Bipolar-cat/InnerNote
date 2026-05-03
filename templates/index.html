@@ -68,7 +68,7 @@
             const note = document.getElementById('note').value;
             const now = new Date();
             
-            // 24時間表記（時:分）を含む日時の作成
+            // 月/日 時:分の形式で保存
             const timestamp = `${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
             
             const newLog = { timestamp, mood: Number(mood), condition: Number(condition), note };
@@ -89,19 +89,13 @@
             
             logs.forEach((log, index) => {
                 if (index < 10) {
-                    logsDiv.innerHTML += `
-                        <div class="log-item">
-                            <strong>【${log.timestamp}】</strong><br>
-                            気分: ${getLabel(log.mood)} ／ 体: ${getLabel(log.condition)}<br>
-                            ${log.note}
-                        </div>`;
+                    logsDiv.innerHTML += `<div class="log-item"><strong>【${log.timestamp}】</strong><br>気分: ${getLabel(log.mood)} ／ 体: ${getLabel(log.condition)}<br>${log.note}</div>`;
                 }
             });
 
-            // グラフ用に最新10件を古い順に並び替え
             const displayData = [...logs].slice(0, 10).reverse();
             displayData.forEach(log => {
-                chartData.labels.push(log.timestamp); // 日時と時間をラベルに反映
+                chartData.labels.push(log.timestamp);
                 chartData.mood.push(log.mood);
                 chartData.condition.push(log.condition);
             });
@@ -129,22 +123,8 @@
                 options: { 
                     responsive: true, maintainAspectRatio: false,
                     scales: { 
-                        y: { 
-                            min: 0, max: 10,
-                            ticks: { 
-                                stepSize: 3,
-                                callback: function(value) { 
-                                    if (value === 2) return '低い/悪い';
-                                    if (value === 5) return '普通';
-                                    if (value === 8) return '良い';
-                                    return '';
-                                } 
-                            } 
-                        },
-                        x: {
-                            ticks: { font: { size: 10 }, maxRotation: 45, minRotation: 45 }
-                        }
-                    } 
+                        y: { min: 0, max: 10, ticks: { stepSize: 3, callback: v => (v===2?'低い/悪い':v===5?'普通':v===8?'良い':'') } }
+                    }
                 }
             });
         }
