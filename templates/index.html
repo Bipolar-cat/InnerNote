@@ -6,44 +6,59 @@
     <title>InnerNote - 気分と調子の変化を記録</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; background-color: #f8f9fa; }
-        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h1 { color: #007bff; text-align: center; margin-bottom: 5px; }
-        .subtitle { text-align: center; font-size: 0.9em; color: #666; margin-bottom: 20px; font-weight: bold; }
-        label { display: block; margin-top: 15px; font-weight: bold; }
-        select, textarea { width: 100%; padding: 10px; margin-top: 5px; border-radius: 5px; border: 1px solid #ddd; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 5px; margin-top: 20px; font-size: 16px; cursor: pointer; }
-        .log-item { background: #eee; padding: 10px; margin-top: 10px; border-radius: 5px; font-size: 14px; }
+        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; background-color: #f8f9fa; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        h1 { color: #4a90e2; text-align: center; margin-bottom: 5px; font-size: 1.8em; }
+        .subtitle { text-align: center; font-size: 0.9em; color: #666; margin-bottom: 25px; font-weight: bold; }
+        
+        .section-title { text-align: center; font-weight: bold; margin-top: 20px; margin-bottom: 10px; display: block; }
+        
+        /* ボタン選択形式のスタイル */
+        .btn-group { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
+        .btn-group input { display: none; }
+        .btn-group label { 
+            flex: 1; text-align: center; padding: 10px; border: 1px solid #ddd; border-radius: 8px; 
+            cursor: pointer; transition: all 0.2s; background: #fff; font-weight: normal; margin-top: 0;
+        }
+        .btn-group input:checked + label { background: #4a90e2; color: white; border-color: #4a90e2; font-weight: bold; }
+
+        textarea { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; font-size: 16px; }
+        .main-btn { 
+            width: 100%; padding: 15px; background: #4a90e2; color: white; border: none; 
+            border-radius: 8px; margin-top: 20px; font-size: 18px; font-weight: bold; cursor: pointer; 
+        }
+        
+        .log-item { background: #fff; padding: 15px; margin-top: 15px; border-radius: 10px; border-left: 5px solid #4a90e2; box-shadow: 0 2px 4px rgba(0,0,0,0.05); font-size: 14px; }
         canvas { margin-top: 30px; max-width: 100%; }
+        .privacy-note { text-align: center; font-size: 0.7em; color: #999; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="card">
         <h1>InnerNote</h1>
-        <div class="subtitle">気分と調子の変化を記録</div>
+        <div class="subtitle">**気分と調子の変化を記録**</div>
 
-        <p style="text-align: center; font-size: 0.7em; color: #999;">データはあなたのブラウザにのみ保存されます</p>
+        <label class="section-title">今日の気分は？</label>
+        <div class="btn-group">
+            <input type="radio" name="mood" id="m1" value="2"><label for="m1">低</label>
+            <input type="radio" name="mood" id="m2" value="5" checked><label for="m2">普通</label>
+            <input type="radio" name="mood" id="m3" value="8"><label for="m3">良い</label>
+        </div>
 
-        <label>今の気分 (1:低 〜 10:高)</label>
-        <select id="mood">
-            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-            <option value="4">4</option><option value="5" selected>5</option><option value="6">6</option>
-            <option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
-        </select>
+        <label class="section-title">体の調子は？</label>
+        <div class="btn-group">
+            <input type="radio" name="cond" id="c1" value="2"><label for="c1">悪い</label>
+            <input type="radio" name="cond" id="c2" value="5" checked><label for="c2">普通</label>
+            <input type="radio" name="cond" id="c3" value="8"><label for="c3">良い</label>
+        </div>
 
-        <label>体の調子 (1:悪 〜 10:良)</label>
-        <select id="condition">
-            <option value="1">1</option><option value="2">2</option><option value="3">3</option>
-            <option value="4">4</option><option value="5" selected>5</option><option value="6">6</option>
-            <option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
-        </select>
+        <textarea id="note" rows="3" placeholder="今の気持ちをメモ..."></textarea>
 
-        <label>今の気持ちをメモ...</label>
-        <textarea id="note" rows="3"></textarea>
+        <button class="main-btn" onclick="saveLog()">記録する</button>
+        
+        <p class="privacy-note">データはあなたのブラウザにのみ保存されます</p>
 
-        <button onclick="saveLog()">記録する</button>
-
-        <div style="height: 250px;">
+        <div style="height: 250px; margin-top: 20px;">
             <canvas id="myChart"></canvas>
         </div>
         <div id="logs"></div>
@@ -51,20 +66,16 @@
 
     <script>
         let myChart = null;
-
-        window.onload = function() {
-            displayLogs();
-        };
+        window.onload = function() { displayLogs(); };
 
         function saveLog() {
-            const mood = document.getElementById('mood').value;
-            const condition = document.getElementById('condition').value;
+            const mood = document.querySelector('input[name="mood"]:checked').value;
+            const condition = document.querySelector('input[name="cond"]:checked').value;
             const note = document.getElementById('note').value;
             const now = new Date();
             const timestamp = `${now.getFullYear()}/${now.getMonth()+1}/${now.getDate()} ${now.getHours()}:${now.getMinutes().toString().padStart(2, '0')}`;
             
             const newLog = { timestamp, mood: Number(mood), condition: Number(condition), note };
-            
             let logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
             logs.unshift(newLog);
             localStorage.setItem('innernote_logs', JSON.stringify(logs));
@@ -76,65 +87,51 @@
         function displayLogs() {
             const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
             const logsDiv = document.getElementById('logs');
-            logsDiv.innerHTML = '<h3>最近の記録</h3>';
+            logsDiv.innerHTML = '<h3 style="text-align:center; margin-top:30px;">最近の記録</h3>';
             
             const chartData = { labels: [], mood: [], condition: [] };
             
             logs.forEach((log, index) => {
                 if (index < 10) {
-                    logsDiv.innerHTML += `<div class="log-item"><strong>${log.timestamp}</strong><br>気分: ${log.mood} / 調子: ${log.condition}<br>${log.note}</div>`;
+                    logsDiv.innerHTML += `<div class="log-item"><strong>【${log.timestamp}】</strong><br>気分: ${getLabel(log.mood)} ／ 体: ${getLabel(log.condition)}<br>${log.note}</div>`;
                 }
             });
 
             const displayData = [...logs].slice(0, 10).reverse();
             displayData.forEach(log => {
-                chartData.labels.push(log.timestamp);
+                chartData.labels.push(log.timestamp.split(' ')[0]); // 日付のみ表示
                 chartData.mood.push(log.mood);
                 chartData.condition.push(log.condition);
             });
-
             updateChart(chartData);
         }
 
+        function getLabel(val) {
+            if (val <= 3) return "低い/悪い";
+            if (val <= 6) return "普通";
+            return "良い";
+        }
+
         function updateChart(data) {
-            const canvas = document.getElementById('myChart');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-            
-            if (myChart) {
-                myChart.destroy();
-            }
-            
+            const ctx = document.getElementById('myChart').getContext('2d');
+            if (myChart) myChart.destroy();
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: data.labels,
                     datasets: [
-                        { label: '気分', data: data.mood, borderColor: '#007bff', backgroundColor: '#007bff', fill: false, tension: 0.1 },
-                        { label: '調子', data: data.condition, borderColor: '#ffc107', backgroundColor: '#ffc107', fill: false, tension: 0.1 }
+                        { label: '気分', data: data.mood, borderColor: '#4a90e2', backgroundColor: '#4a90e2', fill: false, tension: 0.3 },
+                        { label: '体調', data: data.condition, borderColor: '#f5a623', backgroundColor: '#f5a623', fill: false, tension: 0.3 }
                     ]
                 },
                 options: { 
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { min: 1, max: 10 } } 
-                }
-            });
-        }
-    </script>
-</body>
-</html>
-                data: {
-                    labels: data.labels,
-                    datasets: [
-                        { label: '気分', data: data.mood, borderColor: '#007bff', backgroundColor: '#007bff', fill: false, tension: 0.1 },
-                        { label: '調子', data: data.condition, borderColor: '#ffc107', backgroundColor: '#ffc107', fill: false, tension: 0.1 }
-                    ]
-                },
-                options: { 
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { y: { min: 1, max: 10 } } 
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { min: 0, max: 10, ticks: { callback: function(value) { 
+                        if (value === 2) return '低い/悪い';
+                        if (value === 5) return '普通';
+                        if (value === 8) return '良い';
+                        return '';
+                    } } } } 
                 }
             });
         }
