@@ -4,23 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InnerNote</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* 娘さんのデザインを忠実に再現 */
-        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; background: #fdfdfd; color: #333; }
-        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 15px; background: #f0f2f5; color: #333; }
+        .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        
+        /* 今すぐバックアップボタン */
+        .backup-btn { display: block; width: fit-content; margin: 0 auto 20px; padding: 8px 16px; background: #e7f3ff; color: #007bff; border-radius: 20px; font-size: 0.85em; text-decoration: none; font-weight: bold; }
+        
         .header { text-align: center; margin-bottom: 20px; }
-        h1 { color: #007bff; font-size: 1.4em; margin-bottom: 5px; }
-        .sub-header { font-size: 0.8em; color: #666; margin-bottom: 20px; }
-        h2 { font-size: 0.9em; margin-bottom: 10px; font-weight: bold; }
+        h1 { color: #007bff; font-size: 1.8em; margin-bottom: 5px; }
+        .sub-header { font-size: 0.8em; color: #666; font-weight: bold; }
+
+        h2 { font-size: 1em; text-align: center; margin: 15px 0 10px; font-weight: bold; }
+        
+        /* 選択ボタンのデザイン */
         .btn-group { display: flex; justify-content: space-around; margin-bottom: 20px; gap: 8px; }
-        .opt-btn { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 1em; color: #333; }
+        .opt-btn { flex: 1; padding: 12px; border-radius: 10px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 1em; color: #333; }
         .opt-btn.active { background: #e7f3ff; border-color: #007bff; color: #007bff; font-weight: bold; }
-        textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; margin-bottom: 15px; font-size: 1em; }
-        .save-btn { width: 100%; padding: 15px; background: #007bff; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1.1em; cursor: pointer; }
+        
+        textarea { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #ddd; box-sizing: border-box; margin-bottom: 15px; font-size: 1.1em; background: #fafafa; }
+        
+        /* 青色の記録するボタン */
+        .save-btn { width: 100%; padding: 16px; background: #4a90e2; color: white; border: none; border-radius: 12px; font-weight: bold; font-size: 1.1em; cursor: pointer; }
+        
+        /* グラフエリア */
+        .chart-container { position: relative; height: 250px; width: 100%; margin-top: 30px; border-top: 1px dashed #eee; padding-top: 20px; }
+        
+        /* 最新の記録表示 */
+        .history-item { margin-top: 20px; padding: 15px; border-top: 1px solid #eee; font-size: 0.9em; line-height: 1.6; }
+        .history-date { font-weight: bold; color: #333; margin-bottom: 5px; }
     </style>
 </head>
 <body>
     <div class="card">
+        <a href="#" class="backup-btn">☁️ 今すぐバックアップ</a>
+        
         <div class="header">
             <h1>InnerNote</h1>
             <div class="sub-header">気分と調子の変化を記録</div>
@@ -42,10 +61,17 @@
 
         <textarea id="note" rows="3" placeholder="今の気持ちをメモ..."></textarea>
         <button class="save-btn" onclick="saveData()">記録する</button>
+
+        <div class="chart-container">
+            <canvas id="myChart"></canvas>
+        </div>
+
+        <div id="latest-log" class="history-item"></div>
     </div>
 
     <script>
         let currentData = { mood: 5, cond: 5 };
+        let chartInstance = null;
 
         function setVal(type, val, btn) {
             currentData[type] = val;
@@ -60,16 +86,47 @@
             const now = new Date();
             const dateStr = (now.getMonth() + 1) + '/' + now.getDate() + ' ' + now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
             
-            logs.push({
-                date: dateStr,
-                mood: currentData.mood,
-                condition: currentData.cond,
-                note: note
-            });
+            logs.push({ date: dateStr, mood: currentData.mood, condition: currentData.cond, note: note });
             localStorage.setItem('innernote_logs', JSON.stringify(logs));
             alert("記録しました！");
             document.getElementById('note').value = "";
+            updateView();
         }
+
+        function updateView() {
+            const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
+            if (logs.length === 0) return;
+
+            // 最新の1件をグラフの下に表示
+            const last = logs[logs.length - 1];
+            document.getElementById('latest-log').innerHTML = `
+                <div class="history-date">【最新の記録: ${last.date}】</div>
+                <div>${last.note || "（メモなし）"}</div>
+            `;
+
+            // グラフの描画（直近10件）
+            const last10 = logs.slice(-10);
+            if (chartInstance) chartInstance.destroy();
+            const ctx = document.getElementById('myChart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: last10.map(l => l.date.split(' ')[0]),
+                    datasets: [
+                        { label: '気分', data: last10.map(l => l.mood), borderColor: '#4a90e2', tension: 0.3, fill: false },
+                        { label: '体調', data: last10.map(l => l.condition), borderColor: '#f5a623', tension: 0.3, fill: false }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { y: { min: 0, max: 10 } }
+                }
+            });
+        }
+
+        // ページを開いた時にグラフを表示
+        window.onload = updateView;
     </script>
 </body>
 </html>
