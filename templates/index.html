@@ -3,52 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InnerNote - 3段階版</title>
+    <title>InnerNote</title>
     <style>
-        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; background: #fdfdfd; }
+        /* 娘さんのデザインを忠実に再現 */
+        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; background: #fdfdfd; color: #333; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h2 { font-size: 1.1em; text-align: center; margin-bottom: 10px; font-weight: bold; }
+        .header { text-align: center; margin-bottom: 20px; }
+        h1 { color: #007bff; font-size: 1.4em; margin-bottom: 5px; }
+        .sub-header { font-size: 0.8em; color: #666; margin-bottom: 20px; }
+        h2 { font-size: 0.9em; margin-bottom: 10px; font-weight: bold; }
         .btn-group { display: flex; justify-content: space-around; margin-bottom: 20px; gap: 8px; }
-        .opt-btn { padding: 15px; border-radius: 10px; border: 1px solid #ddd; background: #fff; width: 30%; cursor: pointer; font-size: 1em; }
+        .opt-btn { flex: 1; padding: 15px; border-radius: 10px; border: 1px solid #ddd; background: #fff; cursor: pointer; font-size: 1em; color: #333; }
         .opt-btn.active { background: #e7f3ff; border-color: #007bff; color: #007bff; font-weight: bold; }
-        textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; margin: 10px 0; font-size: 1em; }
-        .save-btn { width: 100%; padding: 15px; background: #007bff; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; margin-bottom: 15px; font-size: 1em; }
+        .save-btn { width: 100%; padding: 15px; background: #007bff; color: white; border: none; border-radius: 10px; font-weight: bold; font-size: 1.1em; cursor: pointer; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1 style="color:#007bff; font-size:1.4em; text-align:center;">InnerNote</h1>
+        <div class="header">
+            <h1>InnerNote</h1>
+            <div class="sub-header">気分と調子の変化を記録</div>
+        </div>
+        
         <h2>今日の気分は？</h2>
         <div class="btn-group">
             <button class="opt-btn" onclick="setVal('mood', 1, this)">低</button>
             <button class="opt-btn active" onclick="setVal('mood', 5, this)">普通</button>
             <button class="opt-btn" onclick="setVal('mood', 10, this)">良い</button>
         </div>
+
         <h2>体の調子は？</h2>
         <div class="btn-group">
             <button class="opt-btn" onclick="setVal('cond', 1, this)">悪い</button>
             <button class="opt-btn active" onclick="setVal('cond', 5, this)">普通</button>
             <button class="opt-btn" onclick="setVal('cond', 10, this)">良い</button>
         </div>
-        <textarea id="note" rows="3" placeholder="メモを残す..."></textarea>
+
+        <textarea id="note" rows="3" placeholder="今の気持ちをメモ..."></textarea>
         <button class="save-btn" onclick="saveData()">記録する</button>
     </div>
+
     <script>
-        let inputData = { mood: 5, cond: 5 };
+        let currentData = { mood: 5, cond: 5 };
+
         function setVal(type, val, btn) {
-            inputData[type] = val;
-            const parent = btn.parentElement;
-            parent.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
+            currentData[type] = val;
+            const group = btn.parentElement;
+            group.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
         }
+
         function saveData() {
             const note = document.getElementById('note').value;
             const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
             const now = new Date();
+            const dateStr = (now.getMonth() + 1) + '/' + now.getDate() + ' ' + now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+            
             logs.push({
-                date: (now.getMonth()+1)+'/'+now.getDate()+' '+now.getHours()+':'+(now.getMinutes()<10?'0':'')+now.getMinutes(),
-                mood: inputData.mood,
-                condition: inputData.cond,
+                date: dateStr,
+                mood: currentData.mood,
+                condition: currentData.cond,
                 note: note
             });
             localStorage.setItem('innernote_logs', JSON.stringify(logs));
