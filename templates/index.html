@@ -106,4 +106,21 @@
                     // ここで日付と時間の2行表示を実現しています
                     labels: last10.map(l => [l.date, l.time || '']),
                     datasets: [
-                        { label: '気分', data: last10.map(l => l.mood), borderColor: '#4a90e2', backgroundColor
+                        { label: '気分', data: last10.map(l => l.mood), borderColor: '#4a90e2', backgroundColor: '#4a90e2', tension: 0.3 },
+                        { label: '体調', data: last10.map(l => l.condition), borderColor: '#f5a623', backgroundColor: '#f5a623', tension: 0.3 }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { 
+                        y: { min: 0, max: 10, ticks: { callback: v => v===10?'良い':v===5?'普通':v===1?'悪い':'' } },
+                        x: { ticks: { font: { size: 9 } } }
+                    }
+                }
+            });
+        }
+        window.onload = updateView;
+    </script>
+</body>
+</html>
