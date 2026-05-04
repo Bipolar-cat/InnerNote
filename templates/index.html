@@ -3,148 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InnerNote - 気分と調子の変化を記録</title>
+    <title>InnerNote - 診察用まとめ</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; max-width: 500px; margin: auto; padding: 20px; background-color: #f8f9fa; color: #333; }
-        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        h1 { color: #4a90e2; text-align: center; margin-bottom: 5px; font-size: 2em; font-weight: 500; }
-        .subtitle { text-align: center; font-size: 0.85em; color: #666; margin-bottom: 30px; }
-        .section-title { text-align: center; font-weight: bold; margin-top: 25px; margin-bottom: 12px; display: block; }
-        .btn-group { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
-        .btn-group input { display: none; }
-        .btn-group label { flex: 1; text-align: center; padding: 12px 10px; border: 1px solid #ddd; border-radius: 10px; cursor: pointer; background: #fff; transition: all 0.2s; }
-        .btn-group input:checked + label { background: #e6f0fa; color: #4a90e2; border-color: #aed0ee; font-weight: bold; }
-        textarea { width: 100%; padding: 15px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 1em; margin-top: 15px; resize: none; }
-        .main-btn { width: 100%; padding: 16px; background: #4a90e2; color: white; border: none; border-radius: 10px; margin-top: 25px; font-size: 1.1em; font-weight: bold; cursor: pointer; }
-        .log-item { background: #fff; padding: 18px; margin-top: 18px; border-radius: 12px; border-left: 5px solid #4a90e2; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 0.95em; }
-        .chart-section { margin-top: 30px; height: 260px; }
-        .privacy-note { text-align: center; font-size: 0.75em; color: #aaa; margin-top: 15px; }
+        body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; background: #f0f7ff; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        h1 { color: #0056b3; text-align: center; font-size: 1.5em; }
+        .date-info { text-align: center; font-size: 0.8em; color: #666; margin-bottom: 15px; }
+        .btn { width: 100%; padding: 15px; background: #0056b3; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        .summary-box { background: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid #ddd; margin-top: 15px; }
+        .chart-container { position: relative; height: 250px; width: 100%; margin-top: 20px; }
+        ul { padding-left: 20px; font-size: 0.9em; line-height: 1.6; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>InnerNote</h1>
-        <div class="subtitle">**気分と調子の変化を記録**</div>
-
-        <label class="section-title">今日の気分は？</label>
-        <div class="btn-group">
-            <input type="radio" name="mood" id="m1" value="2"><label for="m1">低</label>
-            <input type="radio" name="mood" id="m2" value="5" checked><label for="m2">普通</label>
-            <input type="radio" name="mood" id="m3" value="8"><label for="m3">良い</label>
-        </div>
-
-        <label class="section-title">体の調子は？</label>
-        <div class="btn-group">
-            <input type="radio" name="cond" id="c1" value="2"><label for="c1">悪い</label>
-            <input type="radio" name="cond" id="c2" value="5" checked><label for="c2">普通</label>
-            <input type="radio" name="cond" id="c3" value="8"><label for="c3">良い</label>
-        </div>
-
-        <textarea id="note" rows="3" placeholder="今の気持ちをメモ..."></textarea>
-        <button class="main-btn" onclick="saveLog()">記録する</button>
+        <h1>診察用まとめ</h1>
+        <div id="last-date" class="date-info">前回のまとめ：未作成</div>
+        <button class="btn" onclick="generateClinicReport()">前回の診察からの記録をまとめる</button>
         
-        <p class="privacy-note">
-            データはあなたのブラウザにのみ安全に保存されます。<br>
-            時間は日本標準時(JST)で正確に記録されます。
-        </p>
-
-        <div class="chart-section">
-            <canvas id="myChart"></canvas>
+        <div id="report-area" style="display:none;">
+            <div class="chart-container">
+                <canvas id="clinicChart"></canvas>
+            </div>
+            <div class="summary-box">
+                <strong>【期間中のメモ】</strong>
+                <ul id="note-list"></ul>
+            </div>
+            <button class="btn" style="background:#666; margin-top:15px;" onclick="copyReport()">内容をコピーする</button>
         </div>
-        <div id="logs"></div>
     </div>
 
     <script>
         let myChart = null;
-        window.onload = function() { displayLogs(); };
 
-        function saveLog() {
-            const mood = document.querySelector('input[name="mood"]:checked').value;
-            const condition = document.querySelector('input[name="cond"]:checked').value;
-            const note = document.getElementById('note').value;
-            
-            const now = new Date();
-            const timestamp = now.toLocaleString('ja-JP', {
-                timeZone: 'Asia/Tokyo',
-                month: 'numeric', day: 'numeric',
-                hour: '2-digit', minute: '2-digit',
-                hour12: false
-            }).replace('/', '月').replace(' ', '日 ');
+        window.onload = function() {
+            const last = localStorage.getItem('last_summary_date');
+            if(last) document.getElementById('last-date').innerText = "前回のまとめ：" + new Date(last).toLocaleString('ja-JP');
+        };
 
-            const newLog = { timestamp, mood: Number(mood), condition: Number(condition), note };
-            let logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
-            logs.unshift(newLog);
-            localStorage.setItem('innernote_logs', JSON.stringify(logs));
-            
-            document.getElementById('note').value = '';
-            displayLogs();
-        }
-
-        function displayLogs() {
+        function generateClinicReport() {
             const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
-            const logsDiv = document.getElementById('logs');
-            logsDiv.innerHTML = '<h3 style="text-align:center; margin-top:35px; font-weight:normal;">最近の記録</h3>';
-            
-            const chartData = { labels: [], mood: [], condition: [] };
-            
-            logs.forEach((log, index) => {
-                if (index < 10) {
-                    logsDiv.innerHTML += `
-                        <div class="log-item">
-                            <strong>【${log.timestamp}】</strong><br>
-                            気分: ${getLabel(log.mood)} ／ 体: ${getLabel(log.condition)}<br>
-                            ${log.note}
-                        </div>`;
+            const lastSummaryDate = localStorage.getItem('last_summary_date');
+            const now = new Date();
+
+            const filteredLogs = lastSummaryDate 
+                ? logs.filter(log => new Date(log.isoDate) > new Date(lastSummaryDate))
+                : logs.slice(-14);
+
+            if (filteredLogs.length === 0) {
+                alert("新しい記録が見つかりませんでした。");
+                return;
+            }
+
+            const noteList = document.getElementById('note-list');
+            noteList.innerHTML = "";
+            filteredLogs.forEach(log => {
+                if(log.note) {
+                    const li = document.createElement('li');
+                    li.innerText = `${log.date}: ${log.note}`;
+                    noteList.appendChild(li);
                 }
             });
 
-            const displayData = [...logs].slice(0, 10).reverse();
-            displayData.forEach(log => {
-                // グラフの横軸に「日付」と「時間」の両方を表示するように変更
-                chartData.labels.push(log.timestamp.split(' ')); 
-                chartData.mood.push(log.mood);
-                chartData.condition.push(log.condition);
-            });
-            updateChart(chartData);
-        }
+            const labels = filteredLogs.map(log => log.date);
+            const moodData = filteredLogs.map(log => log.mood);
+            const condData = filteredLogs.map(log => log.condition);
 
-        function getLabel(val) {
-            if (val <= 3) return "低い/悪い";
-            if (val <= 6) return "普通";
-            return "良い";
-        }
-
-        function updateChart(data) {
-            const ctx = document.getElementById('myChart').getContext('2d');
             if (myChart) myChart.destroy();
-            
+            const ctx = document.getElementById('clinicChart').getContext('2d');
             myChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.labels,
+                    labels: labels,
                     datasets: [
-                        { label: '気分', data: data.mood, borderColor: '#4a90e2', backgroundColor: '#4a90e2', tension: 0.3, borderWidth: 3 },
-                        { label: '体調', data: data.condition, borderColor: '#f5a623', backgroundColor: '#f5a623', tension: 0.3, borderWidth: 3 }
+                        { label: '気分', data: moodData, borderColor: '#ff6384', fill: false, tension: 0.1 },
+                        { label: '体調', data: condData, borderColor: '#36a2eb', fill: false, tension: 0.1 }
                     ]
                 },
-                options: { 
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { 
-                        y: { 
-                            min: 0, max: 10,
-                            ticks: { stepSize: 3, callback: v => (v===2?'低い/悪い':v===5?'普通':v===8?'良い':'') } 
-                        },
-                        x: { 
-                            ticks: { 
-                                font: { size: 10 },
-                                maxRotation: 0, 
-                                autoSkip: true 
-                            } 
-                        }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false }
             });
+
+            document.getElementById('report-area').style.display = 'block';
+            localStorage.setItem('last_summary_date', now.toISOString());
+            document.getElementById('last-date').innerText = "前回のまとめ：" + now.toLocaleString('ja-JP');
+        }
+
+        function copyReport() {
+            const notes = document.getElementById('note-list').innerText;
+            const text = `【診察メモ】\n${notes}`;
+            navigator.clipboard.writeText(text).then(() => alert("メモをコピーしました！"));
         }
     </script>
 </body>
