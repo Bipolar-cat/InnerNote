@@ -47,7 +47,11 @@
         </div>
         <textarea id="note" rows="3" placeholder="今の気持ちをメモ..."></textarea>
         <button class="save-btn" onclick="saveData()">記録する</button>
-        <div class="chart-container"><canvas id="myChart"></canvas></div>
+        
+        <div class="chart-container">
+            <canvas id="myChart"></canvas>
+        </div>
+
         <div class="recent-title">最近の記録</div>
         <div id="history-list"></div>
     </div>
@@ -59,15 +63,17 @@
             const mood = document.getElementById('mood-select').value;
             const cond = document.getElementById('cond-select').value;
             const note = document.getElementById('note').value;
-            const logs = JSON.parse(localStorage.getItem('innernote_logs_10v2')) || [];
+            
+            // データ形式の衝突を避けるため、新しい保存キー名を使用します
+            const logs = JSON.parse(localStorage.getItem('innernote_10step_final')) || [];
             
             const now = new Date();
-            // 西暦（YYYY/M/D）の形式で保存
+            // 西暦（YYYY/MM/DD）の形式
             const dateStr = now.getFullYear() + '/' + (now.getMonth() + 1) + '/' + now.getDate();
             const timeStr = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
             
             logs.push({ date: dateStr, time: timeStr, mood: parseInt(mood), condition: parseInt(cond), note: note });
-            localStorage.setItem('innernote_logs_10v2', JSON.stringify(logs));
+            localStorage.setItem('innernote_10step_final', JSON.stringify(logs));
             
             alert("記録しました！");
             document.getElementById('note').value = "";
@@ -75,39 +81,41 @@
         }
 
         function updateView() {
-            const logs = JSON.parse(localStorage.getItem('innernote_logs_10v2')) || [];
+            const logs = JSON.parse(localStorage.getItem('innernote_10step_final')) || [];
             const list = document.getElementById('history-list');
             list.innerHTML = "";
             
             if (logs.length === 0) return;
 
-            // 最近の記録を表示
             logs.slice(-3).reverse().forEach(l => {
                 list.innerHTML += `<div class="history-item"><b>${l.date} ${l.time}</b><br>気分: ${l.mood} / 体: ${l.condition}<br>${l.note}</div>`;
             });
 
-            // グラフの描画
             const last10 = logs.slice(-10);
             const ctx = document.getElementById('myChart').getContext('2d');
-            if (chartInstance) chartInstance.destroy();
+            
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
             
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: last10.map(l => [l.date, l.time]),
                     datasets: [
-                        { label: '気分', data: last10.map(l => l.mood), borderColor: '#4a90e2', tension: 0.3, fill: false },
-                        { label: '体調', data: last10.map(l => l.condition), borderColor: '#f5a623', tension: 0.3, fill: false }
+                        { label: '気分', data: last10.map(l => l.mood), borderColor: '#4a90e2', backgroundColor: 'rgba(74, 144, 226, 0.1)', tension: 0.3, fill: true },
+                        { label: '体調', data: last10.map(l => l.condition), borderColor: '#f5a623', backgroundColor: 'rgba(245, 166, 35, 0.1)', tension: 0.3, fill: true }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    scales: { y: { min: 1, max: 10 } }
+                    scales: {
+                        y: { min: 1, max: 10, ticks: { stepSize: 1 } }
+                    }
                 }
             });
         }
-        // ページ読み込み時に実行
         window.onload = updateView;
     </script>
 </body>
