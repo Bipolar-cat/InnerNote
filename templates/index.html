@@ -3,72 +3,51 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InnerNote - 3段階合体版</title>
+    <title>InnerNote - 3段階W合体版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; background: #f0f7ff; }
+        body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; background: #fdfdfd; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        h1 { color: #0056b3; text-align: center; font-size: 1.5em; }
-        .btn-group { display: flex; justify-content: space-around; margin: 20px 0; }
-        .mood-btn { padding: 15px; border-radius: 10px; border: 1px solid #ddd; background: #f8f9fa; cursor: pointer; width: 30%; font-size: 1.2em; }
-        .mood-btn.active { background: #4a90e2; color: white; border-color: #4a90e2; }
-        textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; margin: 15px 0; }
-        .btn { width: 100%; padding: 15px; background: #4a90e2; color: white; border: none; border-radius: 10px; font-weight: bold; }
-        .summary-btn { width: 100%; padding: 12px; background: #0056b3; color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 20px; }
+        h2 { color: #333; font-size: 1.1em; margin-bottom: 10px; text-align: center; }
+        .btn-group { display: flex; justify-content: space-around; margin-bottom: 20px; }
+        .opt-btn { padding: 12px; border-radius: 8px; border: 1px solid #ddd; background: #fff; cursor: pointer; width: 30%; font-size: 1em; }
+        .opt-btn.active { background: #e7f3ff; border-color: #007bff; color: #007bff; font-weight: bold; }
+        textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; margin: 10px 0; }
+        .save-btn { width: 100%; padding: 15px; background: #007bff; color: white; border: none; border-radius: 10px; font-weight: bold; }
         .chart-container { position: relative; height: 250px; width: 100%; margin-top: 20px; }
-        .summary-box { background: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid #ddd; margin-top: 15px; font-size: 0.9em; }
+        .summary-list { background: #f8f9fa; padding: 15px; border-radius: 10px; margin-top: 15px; font-size: 0.9em; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>InnerNote (3段階合体版)</h1>
-        <div class="btn-group">
-            <button class="mood-btn" onclick="setMood(1, this)">☁️</button>
-            <button class="mood-btn" onclick="setMood(5, this)">☀️</button>
-            <button class="mood-btn" onclick="setMood(10, this)">🔥</button>
+        <h1 style="color:#007bff; font-size:1.4em; text-align:center;">InnerNote (W項目版)</h1>
+        <h2>今日の気分は？</h2>
+        <div class="btn-group" id="mood-group">
+            <button class="opt-btn" onclick="setVal('mood', 1, this)">低</button>
+            <button class="opt-btn active" onclick="setVal('mood', 5, this)">普通</button>
+            <button class="opt-btn" onclick="setVal('mood', 10, this)">良い</button>
         </div>
-        <textarea id="note" rows="3" placeholder="メモを残す..."></textarea>
-        <button class="btn" onclick="saveData()">記録する</button>
+        <h2>体の調子は？</h2>
+        <div class="btn-group" id="cond-group">
+            <button class="opt-btn" onclick="setVal('cond', 1, this)">悪い</button>
+            <button class="opt-btn active" onclick="setVal('cond', 5, this)">普通</button>
+            <button class="opt-btn" onclick="setVal('cond', 10, this)">良い</button>
+        </div>
+        <textarea id="note" rows="3" placeholder="今の気持ちをメモ..."></textarea>
+        <button class="save-btn" onclick="saveData()">記録する</button>
         <hr style="margin: 30px 0; border: 0; border-top: 1px dashed #ccc;">
-        <h1>診察用まとめ</h1>
-        <button class="summary-btn" onclick="generateReport()">まとめを表示</button>
+        <h2 style="color:#007bff;">診察用まとめ</h2>
+        <button class="save-btn" style="background:#6c757d;" onclick="updateChart()">最新のまとめを表示</button>
         <div id="report-area" style="display:none;">
-            <div class="chart-container"><canvas id="clinicChart"></canvas></div>
-            <div class="summary-box"><strong>【メモ一覧】</strong><ul id="note-list"></ul></div>
+            <div class="chart-container"><canvas id="myChart"></canvas></div>
+            <div class="summary-list"><strong>【最近の記録】</strong><ul id="note-list"></ul></div>
         </div>
     </div>
     <script>
-        let selectedMood = 5;
-        let myChart = null;
-        function setMood(val, btn) {
-            selectedMood = val;
-            document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-        }
-        function saveData() {
-            const note = document.getElementById('note').value;
-            const now = new Date();
-            const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
-            logs.push({ date: now.toLocaleDateString('ja-JP'), mood: selectedMood, condition: 5, note: note });
-            localStorage.setItem('innernote_logs', JSON.stringify(logs));
-            alert("記録しました！");
-            document.getElementById('note').value = "";
-        }
-        function generateReport() {
-            const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
-            if (logs.length === 0) { alert("記録がありません。"); return; }
-            const lastLogs = logs.slice(-14);
-            const noteList = document.getElementById('note-list');
-            noteList.innerHTML = "";
-            lastLogs.forEach(l => { if(l.note) { const li = document.createElement('li'); li.innerText = `${l.date}: ${l.note}`; noteList.appendChild(li); } });
-            if (myChart) myChart.destroy();
-            myChart = new Chart(document.getElementById('clinicChart').getContext('2d'), {
-                type: 'line',
-                data: { labels: lastLogs.map(l => l.date), datasets: [{ label: '気分', data: lastLogs.map(l => l.mood), borderColor: '#ff6384', tension: 0.3 }] },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 1, max: 10 } } }
-            });
-            document.getElementById('report-area').style.display = 'block';
-        }
+        let data = { mood: 5, cond: 5 }; let chart = null;
+        function setVal(type, val, btn) { data[type] = val; const parent = btn.parentElement; parent.querySelectorAll('.opt-btn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+        function saveData() { const note = document.getElementById('note').value; const logs = JSON.parse(localStorage.getItem('innernote_logs')) || []; logs.push({ date: new Date().toLocaleString('ja-JP', {month:'numeric', day:'numeric', hour:'numeric', minute:'numeric'}), mood: data.mood, condition: data.cond, note: note }); localStorage.setItem('innernote_logs', JSON.stringify(logs)); alert("記録しました！"); document.getElementById('note').value = ""; }
+        function updateChart() { const logs = JSON.parse(localStorage.getItem('innernote_logs')) || []; if (logs.length === 0) return alert("記録がありません"); const last14 = logs.slice(-14); document.getElementById('report-area').style.display = 'block'; const list = document.getElementById('note-list'); list.innerHTML = ""; last14.forEach(l => { if(l.note) list.innerHTML += `<li>${l.date}: ${l.note}</li>`; }); if (chart) chart.destroy(); chart = new Chart(document.getElementById('myChart'), { type: 'line', data: { labels: last14.map(l => l.date), datasets: [{ label: '気分', data: last14.map(l => l.mood), borderColor: '#007bff', tension: 0.3 }, { label: '体調', data: last14.map(l => l.condition), borderColor: '#ffc107', tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 1, max: 10 } } } }); }
     </script>
 </body>
 </html>
