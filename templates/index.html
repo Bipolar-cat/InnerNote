@@ -3,111 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InnerNote - 記録とまとめ</title>
+    <title>InnerNote - 3段階合体版</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body { font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; background: #f0f7ff; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 20px; }
         h1 { color: #0056b3; text-align: center; font-size: 1.5em; }
-        .section-title { font-weight: bold; margin: 20px 0 10px; color: #333; display: block; border-left: 4px solid #0056b3; padding-left: 10px; }
-        .btn-group { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 15px; }
-        .btn-group input { display: none; }
-        .btn-group label { flex: 1; text-align: center; padding: 12px; border: 1px solid #ddd; border-radius: 10px; cursor: pointer; background: #fff; transition: all 0.2s; }
-        .btn-group input:checked + label { background: #0056b3; color: #fff; border-color: #0056b3; font-weight: bold; }
-        textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 1em; margin-bottom: 10px; resize: none; }
-        .main-btn { width: 100%; padding: 16px; background: #4a90e2; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 1.1em; }
-        .summary-btn { width: 100%; padding: 12px; background: #0056b3; color: white; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .btn-group { display: flex; justify-content: space-around; margin: 20px 0; }
+        .mood-btn { padding: 15px; border-radius: 10px; border: 1px solid #ddd; background: #f8f9fa; cursor: pointer; width: 30%; font-size: 1.2em; }
+        .mood-btn.active { background: #4a90e2; color: white; border-color: #4a90e2; }
+        textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; margin: 15px 0; }
+        .btn { width: 100%; padding: 15px; background: #4a90e2; color: white; border: none; border-radius: 10px; font-weight: bold; }
+        .summary-btn { width: 100%; padding: 12px; background: #0056b3; color: white; border: none; border-radius: 10px; font-weight: bold; margin-top: 20px; }
         .chart-container { position: relative; height: 250px; width: 100%; margin-top: 20px; }
         .summary-box { background: #f9f9f9; padding: 15px; border-radius: 10px; border: 1px solid #ddd; margin-top: 15px; font-size: 0.9em; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>InnerNote</h1>
-        
-        <span class="section-title">今日の気分は？</span>
+        <h1>InnerNote (3段階合体版)</h1>
         <div class="btn-group">
-            <input type="radio" name="mood" id="m1" value="2"><label for="m1">低</label>
-            <input type="radio" name="mood" id="m2" value="5" checked><label for="m2">普通</label>
-            <input type="radio" name="mood" id="m3" value="8"><label for="m3">良い</label>
+            <button class="mood-btn" onclick="setMood(1, this)">☁️</button>
+            <button class="mood-btn" onclick="setMood(5, this)">☀️</button>
+            <button class="mood-btn" onclick="setMood(10, this)">🔥</button>
         </div>
-
-        <span class="section-title">体の調子は？</span>
-        <div class="btn-group">
-            <input type="radio" name="cond" id="c1" value="2"><label for="c1">悪い</label>
-            <input type="radio" name="cond" id="c2" value="5" checked><label for="c2">普通</label>
-            <input type="radio" name="cond" id="c3" value="8"><label for="c3">良い</label>
-        </div>
-
-        <textarea id="note" rows="3" placeholder="今の気持ちをメモ..."></textarea>
-        <button class="main-btn" onclick="saveData()">記録する</button>
-
+        <textarea id="note" rows="3" placeholder="メモを残す..."></textarea>
+        <button class="btn" onclick="saveData()">記録する</button>
         <hr style="margin: 30px 0; border: 0; border-top: 1px dashed #ccc;">
-
         <h1>診察用まとめ</h1>
-        <button class="summary-btn" onclick="generateReport()">前回の診察からの記録をまとめる</button>
+        <button class="summary-btn" onclick="generateReport()">まとめを表示</button>
         <div id="report-area" style="display:none;">
             <div class="chart-container"><canvas id="clinicChart"></canvas></div>
-            <div class="summary-box"><strong>【期間中のメモ】</strong><ul id="note-list"></ul></div>
-            <button class="summary-btn" style="background:#666;" onclick="copyReport()">内容をコピーする</button>
+            <div class="summary-box"><strong>【メモ一覧】</strong><ul id="note-list"></ul></div>
         </div>
     </div>
-
     <script>
+        let selectedMood = 5;
         let myChart = null;
+        function setMood(val, btn) {
+            selectedMood = val;
+            document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
         function saveData() {
-            const mood = document.querySelector('input[name="mood"]:checked').value;
-            const cond = document.querySelector('input[name="cond"]:checked').value;
             const note = document.getElementById('note').value;
             const now = new Date();
-            const log = {
-                date: now.toLocaleDateString('ja-JP'),
-                isoDate: now.toISOString(),
-                mood: parseInt(mood),
-                condition: parseInt(cond),
-                note: note
-            };
             const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
-            logs.push(log);
+            logs.push({ date: now.toLocaleDateString('ja-JP'), mood: selectedMood, condition: 5, note: note });
             localStorage.setItem('innernote_logs', JSON.stringify(logs));
             alert("記録しました！");
             document.getElementById('note').value = "";
         }
-
         function generateReport() {
             const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
             if (logs.length === 0) { alert("記録がありません。"); return; }
-            
+            const lastLogs = logs.slice(-14);
             const noteList = document.getElementById('note-list');
             noteList.innerHTML = "";
-            logs.slice(-14).forEach(log => {
-                if(log.note) {
-                    const li = document.createElement('li');
-                    li.innerText = `${log.date}: ${log.note}`;
-                    noteList.appendChild(li);
-                }
-            });
-
-            const lastLogs = logs.slice(-14);
-            const labels = lastLogs.map(l => l.date);
+            lastLogs.forEach(l => { if(l.note) { const li = document.createElement('li'); li.innerText = `${l.date}: ${l.note}`; noteList.appendChild(li); } });
             if (myChart) myChart.destroy();
             myChart = new Chart(document.getElementById('clinicChart').getContext('2d'), {
                 type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: '気分', data: lastLogs.map(l => l.mood), borderColor: '#ff6384', fill: false },
-                        { label: '体調', data: lastLogs.map(l => l.condition), borderColor: '#36a2eb', fill: false }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
+                data: { labels: lastLogs.map(l => l.date), datasets: [{ label: '気分', data: lastLogs.map(l => l.mood), borderColor: '#ff6384', tension: 0.3 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 1, max: 10 } } }
             });
             document.getElementById('report-area').style.display = 'block';
-        }
-
-        function copyReport() {
-            const notes = document.getElementById('note-list').innerText;
-            navigator.clipboard.writeText("【診察メモ】\n" + notes).then(() => alert("コピーしました！"));
         }
     </script>
 </body>
