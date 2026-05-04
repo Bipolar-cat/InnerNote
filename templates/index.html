@@ -3,109 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InnerNote - 10段階評価版</title>
+    <title>InnerNote - 10step</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 500px; margin: auto; padding: 20px; background-color: #f8f9fa; color: #333; }
-        .card { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-        h1 { color: #4a90e2; text-align: center; margin-bottom: 5px; font-size: 2em; }
-        .subtitle { text-align: center; font-size: 0.85em; color: #666; margin-bottom: 30px; }
-        
-        label { display: block; font-weight: bold; margin-top: 20px; margin-bottom: 8px; }
-        select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; font-size: 1em; background: #fff; }
-        
-        .main-btn { width: 100%; padding: 16px; background: #4a90e2; color: white; border: none; border-radius: 10px; margin-top: 25px; font-size: 1.1em; font-weight: bold; cursor: pointer; }
-        .log-item { background: #fff; padding: 15px; margin-top: 15px; border-radius: 12px; border-left: 5px solid #4a90e2; box-shadow: 0 2px 5px rgba(0,0,0,0.05); font-size: 0.9em; }
-        .chart-section { margin-top: 30px; height: 250px; }
+        body { font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; background: #fdfdfd; color: #333; }
+        .card { background: white; padding: 25px; border-radius: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .header { text-align: center; margin-bottom: 25px; }
+        h1 { color: #4a90e2; font-size: 2.2em; margin-bottom: 5px; }
+        .sub-header { font-size: 0.85em; color: #666; font-weight: bold; }
+        .input-group { margin-bottom: 20px; }
+        label { display: block; font-weight: bold; margin-bottom: 10px; font-size: 1.1em; }
+        select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; font-size: 1.1em; background: #fff; appearance: none; }
+        textarea { width: 100%; padding: 15px; border-radius: 15px; border: 1px solid #ddd; box-sizing: border-box; margin-bottom: 20px; font-size: 1em; background: #fafafa; }
+        .save-btn { width: 100%; padding: 18px; background: #4a90e2; color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 1.2em; cursor: pointer; }
+        .chart-container { position: relative; height: 300px; width: 100%; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; }
+        .recent-title { text-align: center; font-weight: bold; font-size: 1.2em; margin-top: 40px; color: #444; }
+        .history-item { padding: 15px; border-bottom: 1px solid #eee; font-size: 0.95em; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>InnerNote</h1>
-        <div class="subtitle">**10段階評価で細かく記録**</div>
-
-        <label>今の気分 (1:低 ～ 10:高)</label>
-        <select id="mood">
-            <script>for(let i=1;i<=10;i++) document.write(`<option value="${i}" ${i===5?'selected':''}>${i}</option>`);</script>
-        </select>
-
-        <label>体の調子 (1:悪 ～ 10:良)</label>
-        <select id="cond">
-            <script>for(let i=1;i<=10;i++) document.write(`<option value="${i}" ${i===5?'selected':''}>${i}</option>`);</script>
-        </select>
-
+        <div class="header">
+            <h1>InnerNote</h1>
+            <div class="sub-header">**気分と調子の変化を記録**</div>
+        </div>
+        <div class="input-group">
+            <label>今の気分 (1:低 ～ 10:高)</label>
+            <select id="mood-select">
+                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                <option value="4">4</option><option value="5" selected>5</option><option value="6">6</option>
+                <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                <option value="10">10</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label>体の調子 (1:悪 ～ 10:良)</label>
+            <select id="cond-select">
+                <option value="1">1</option><option value="2">2</option><option value="3">3</option>
+                <option value="4">4</option><option value="5" selected>5</option><option value="6">6</option>
+                <option value="7">7</option><option value="8">8</option><option value="9">9</option>
+                <option value="10">10</option>
+            </select>
+        </div>
         <textarea id="note" rows="3" placeholder="今の気持ちをメモ..."></textarea>
-        <button class="main-btn" onclick="saveLog()">記録する</button>
-        
-        <div class="chart-section"><canvas id="myChart"></canvas></div>
-        <div id="logs"></div>
+        <button class="save-btn" onclick="saveData()">記録する</button>
+        <div class="chart-container"><canvas id="myChart"></canvas></div>
+        <div class="recent-title">最近の記録</div>
+        <div id="history-list"></div>
     </div>
-
     <script>
-        let myChart = null;
-        window.onload = function() { displayLogs(); };
-
-        function saveLog() {
-            const mood = document.getElementById('mood').value;
-            const condition = document.getElementById('cond').value;
+        let chartInstance = null;
+        function saveData() {
+            const mood = document.getElementById('mood-select').value;
+            const cond = document.getElementById('cond-select').value;
             const note = document.getElementById('note').value;
-            
+            const logs = JSON.parse(localStorage.getItem('innernote_logs_10')) || [];
             const now = new Date();
-            const timestamp = now.toLocaleString('ja-JP', {
-                timeZone: 'Asia/Tokyo',
-                month: 'numeric', day: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-            }).replace('/', '月').replace(' ', '日 ');
-
-            const newLog = { timestamp, mood: Number(mood), condition: Number(condition), note };
-            let logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
-            logs.unshift(newLog);
-            localStorage.setItem('innernote_logs', JSON.stringify(logs));
-            
-            document.getElementById('note').value = '';
-            displayLogs();
+            // 西暦（getFullYear）を含む日付形式に修正
+            const dateStr = now.getFullYear() + '/' + (now.getMonth() + 1) + '/' + now.getDate();
+            const timeStr = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
+            logs.push({ date: dateStr, time: timeStr, mood: parseInt(mood), condition: parseInt(cond), note: note });
+            localStorage.setItem('innernote_logs_10', JSON.stringify(logs));
+            alert("記録しました！");
+            document.getElementById('note').value = "";
+            updateView();
         }
-
-        function displayLogs() {
-            const logs = JSON.parse(localStorage.getItem('innernote_logs')) || [];
-            const logsDiv = document.getElementById('logs');
-            logsDiv.innerHTML = '<h3 style="text-align:center; margin-top:30px;">最近の記録</h3>';
-            
-            const chartData = { labels: [], mood: [], condition: [] };
-            
-            logs.forEach((log, index) => {
-                if (index < 10) {
-                    logsDiv.innerHTML += `<div class="log-item"><strong>【${log.timestamp}】</strong><br>気分: ${log.mood} ／ 体: ${log.condition}<br>${log.note}</div>`;
-                }
+        function updateView() {
+            const logs = JSON.parse(localStorage.getItem('innernote_logs_10')) || [];
+            if (logs.length === 0) return;
+            const list = document.getElementById('history-list');
+            list.innerHTML = "";
+            logs.slice(-3).reverse().forEach(l => {
+                list.innerHTML += `<div class="history-item"><b>${l.date} ${l.time}</b><br>気分: ${l.mood} / 体: ${l.condition}<br>${l.note}</div>`;
             });
-
-            const displayData = [...logs].slice(0, 10).reverse();
-            displayData.forEach(log => {
-                chartData.labels.push(log.timestamp.split(' ')); 
-                chartData.mood.push(log.mood);
-                chartData.condition.push(log.condition);
-            });
-            updateChart(chartData);
-        }
-
-        function updateChart(data) {
+            const last10 = logs.slice(-10);
+            if (chartInstance) chartInstance.destroy();
             const ctx = document.getElementById('myChart').getContext('2d');
-            if (myChart) myChart.destroy();
-            myChart = new Chart(ctx, {
+            chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: data.labels,
+                    labels: last10.map(l => [l.date, l.time]),
                     datasets: [
-                        { label: '気分', data: data.mood, borderColor: '#4a90e2', tension: 0.3, borderWidth: 3 },
-                        { label: '体調', data: data.condition, borderColor: '#f5a623', tension: 0.3, borderWidth: 3 }
+                        { label: '気分', data: last10.map(l => l.mood), borderColor: '#4a90e2', backgroundColor: '#4a90e2', tension: 0.3 },
+                        { label: '体調', data: last10.map(l => l.condition), borderColor: '#f5a623', backgroundColor: '#f5a623', tension: 0.3 }
                     ]
                 },
-                options: { 
-                    responsive: true, maintainAspectRatio: false,
-                    scales: { y: { min: 1, max: 10, ticks: { stepSize: 1 } } }
-                }
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 1, max: 10 } } }
             });
         }
+        window.onload = updateView;
     </script>
 </body>
 </html>
