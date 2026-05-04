@@ -18,7 +18,9 @@
         .save-btn { width: 100%; padding: 18px; background: #4a90e2; color: white; border: none; border-radius: 15px; font-weight: bold; font-size: 1.2em; cursor: pointer; }
         .chart-container { position: relative; height: 300px; width: 100%; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; }
         .recent-title { text-align: center; font-weight: bold; font-size: 1.2em; margin-top: 40px; color: #444; }
-        .history-item { padding: 15px; border-bottom: 1px solid #eee; font-size: 0.95em; }
+        /* 履歴をカード形式にして見やすく */
+        .history-item { background: #fff; border: 1px solid #eee; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .history-date { display: block; color: #4a90e2; font-weight: bold; margin-bottom: 5px; font-size: 0.9em; }
     </style>
 </head>
 <body>
@@ -63,12 +65,9 @@
             const mood = document.getElementById('mood-select').value;
             const cond = document.getElementById('cond-select').value;
             const note = document.getElementById('note').value;
-            
-            // データ形式の衝突を避けるため、新しい保存キー名を使用します
             const logs = JSON.parse(localStorage.getItem('innernote_10step_final')) || [];
             
             const now = new Date();
-            // 西暦（YYYY/MM/DD）の形式
             const dateStr = now.getFullYear() + '/' + (now.getMonth() + 1) + '/' + now.getDate();
             const timeStr = now.getHours() + ':' + (now.getMinutes() < 10 ? '0' : '') + now.getMinutes();
             
@@ -85,33 +84,44 @@
             const list = document.getElementById('history-list');
             list.innerHTML = "";
             
-            if (logs.length === 0) return;
+            // 履歴を表示
+            if (logs.length > 0) {
+                logs.slice().reverse().forEach(l => {
+                    list.innerHTML += `
+                        <div class="history-item">
+                            <span class="history-date">${l.date} ${l.time}</span>
+                            <b>気分: ${l.mood} / 体調: ${l.condition}</b><br>
+                            <span style="color:#666;">${l.note || ""}</span>
+                        </div>`;
+                });
+            } else {
+                list.innerHTML = "<p style='text-align:center; color:#999;'>まだ記録がありません</p>";
+            }
 
-            logs.slice(-3).reverse().forEach(l => {
-                list.innerHTML += `<div class="history-item"><b>${l.date} ${l.time}</b><br>気分: ${l.mood} / 体: ${l.condition}<br>${l.note}</div>`;
-            });
-
+            // グラフ描画（データが空でも枠線だけ表示するように修正）
             const last10 = logs.slice(-10);
             const ctx = document.getElementById('myChart').getContext('2d');
-            
-            if (chartInstance) {
-                chartInstance.destroy();
-            }
+            if (chartInstance) chartInstance.destroy();
             
             chartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: last10.map(l => [l.date, l.time]),
+                    labels: last10.length > 0 ? last10.map(l => [l.date, l.time]) : ["まだデータがありません"],
                     datasets: [
-                        { label: '気分', data: last10.map(l => l.mood), borderColor: '#4a90e2', backgroundColor: 'rgba(74, 144, 226, 0.1)', tension: 0.3, fill: true },
-                        { label: '体調', data: last10.map(l => l.condition), borderColor: '#f5a623', backgroundColor: 'rgba(245, 166, 35, 0.1)', tension: 0.3, fill: true }
+                        { label: '気分', data: last10.map(l => l.mood), borderColor: '#4a90e2', tension: 0.3, fill: false },
+                        { label: '体調', data: last10.map(l => l.condition), borderColor: '#f5a623', tension: 0.3, fill: false }
                     ]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        y: { min: 1, max: 10, ticks: { stepSize: 1 } }
+                        y: { 
+                            min: 1, 
+                            max: 10, 
+                            ticks: { stepSize: 1 },
+                            title: { display: true, text: 'レベル' }
+                        }
                     }
                 }
             });
